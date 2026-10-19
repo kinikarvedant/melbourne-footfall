@@ -1,0 +1,16 @@
+near_radius_m,measure,near_median_change_pct,far_median_change_pct,difference_pts,permutation_p,n_near_sites
+100,"all day, every day",-7.0,-0.5,-6.4,0.323,3
+100,weekday 7-10am,-16.9,-3.4,-13.6,0.07,3
+100,weekday 4-7pm,-9.5,-1.4,-8.0,0.275,3
+150,"all day, every day",1.1,-0.5,1.6,0.577,9
+150,weekday 7-10am,-3.8,-3.4,-0.5,0.914,9
+150,weekday 4-7pm,0.6,-1.4,2.1,0.737,9
+200,"all day, every day",6.2,-0.5,6.8,0.065,12
+200,weekday 7-10am,1.5,-3.4,4.8,0.194,12
+200,weekday 4-7pm,7.8,-1.4,9.2,0.048,12
+250,"all day, every day",3.2,-0.5,3.8,0.205,14
+250,weekday 7-10am,-1.5,-3.4,1.8,0.57,14
+250,weekday 4-7pm,2.4,-1.4,3.9,0.313,14
+300,"all day, every day",6.2,-0.5,6.8,0.037,18
+300,weekday 7-10am,-1.5,-3.4,1.8,0.565,18
+300,weekday 4-7pm,5.3,-1.4,6.7,0.052,18

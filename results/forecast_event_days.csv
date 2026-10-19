@@ -1,0 +1,5 @@
+date,where,sensors,actual,forecast,gap_pct
+2026-09-25,all sensors,97,1072585,866209,23.8
+2026-09-25,Bourke Street Mall (North),1,27002,23440,15.2
+2026-09-26,all sensors,97,813000,1018210,-20.2
+2026-09-26,Bourke Street Mall (North),1,17451,28020,-37.7

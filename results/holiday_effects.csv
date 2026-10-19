@@ -1,0 +1,27 @@
+date,holiday,sensors,change_vs_normal_pct
+2024-11-05,Melbourne Cup Day,90,-26.1
+2024-12-25,Christmas Day,91,-26.1
+2024-12-26,Boxing Day,92,-15.5
+2025-01-01,New Year's Day,91,-3.5
+2025-01-27,Australia Day,90,-38.8
+2025-03-10,Labour Day,89,-2.4
+2025-04-18,Good Friday,95,-13.7
+2025-04-19,Easter Saturday,96,4.4
+2025-04-20,Easter Sunday,95,8.5
+2025-04-21,Easter Monday,95,-9.6
+2025-04-25,ANZAC Day,93,-15.8
+2025-06-09,King's Birthday,93,-20.4
+2025-09-26,Friday before the AFL Grand Final,97,-7.6
+2025-11-04,Melbourne Cup Day,97,-23.8
+2025-12-25,Christmas Day,96,-25.2
+2025-12-26,Boxing Day,98,2.1
+2026-01-01,New Year's Day,92,-5.5
+2026-01-26,Australia Day,97,-4.8
+2026-03-09,Labour Day,97,13.5
+2026-04-03,Good Friday,97,-11.4
+2026-04-04,Easter Saturday,98,10.6
+2026-04-05,Easter Sunday,98,14.7
+2026-04-06,Easter Monday,96,-4.8
+2026-04-25,ANZAC Day,96,15.0
+2026-06-08,King's Birthday,95,-2.1
+2026-09-25,Friday before the AFL Grand Final,98,10.3

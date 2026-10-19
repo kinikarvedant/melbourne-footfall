@@ -1,0 +1,100 @@
+sensor,wape_naive_1w,wape_model,test_hours,sensor_description
+181,11.7,9.1,1344.0,368 Elizabeth Street
+133,13.2,10.3,1344.0,I-Hub Southern Cross Station - Lonsdale Street Entrance - South
+66,12.0,10.5,1296.0,"QV2 Apartments, 300 Swanston Street"
+84,13.4,10.7,1344.0,Elizabeth St - Flinders St (East) - New footpath
+24,11.6,10.9,1344.0,Spencer St-Collins St (North)
+6,14.6,11.4,1344.0,Flinders Underpass - Myki Barriers
+53,14.4,11.6,1344.0,Collins Street (North)
+185,14.9,11.6,1344.0,197 Elizabeth Street
+162,14.8,12.0,1344.0,iHub 489 Elizabeth Street
+62,14.3,12.0,1344.0,La Trobe St (North)
+4,14.9,12.0,1344.0,Town Hall (West)
+67,15.7,12.0,1344.0,Flinders Ln -Degraves St (South)
+47,15.2,12.1,1344.0,Melbourne Central-Elizabeth St (East)
+56,15.6,12.1,1344.0,Lonsdale St - Elizabeth St (North)
+3,15.1,12.1,1344.0,Melbourne Central
+9,14.6,12.2,1296.0,Southern Cross Station
+17,15.5,12.5,1344.0,Collins Place (South)
+184,16.0,12.5,1344.0,124 Elizabeth Street
+1,15.3,12.7,1344.0,Bourke Street Mall (North)
+58,15.9,13.0,1344.0,Bourke St - Spencer St (North)
+23,17.5,13.2,1344.0,Spencer St-Collins St (South)
+52,16.2,13.5,1344.0,Elizabeth St-Lonsdale St (South)
+109,17.2,13.9,1344.0,La Trobe St- William St (South)
+21,16.3,13.9,1320.0,155-161 Russell Street
+132,18.1,14.3,1344.0,I-Hub Corner of King Street and Latrobe Street (317-335 King)
+45,17.8,14.4,1344.0,Little Collins St-Swanston St (East)
+2,17.0,14.5,1344.0,Bourke Street Mall (South)
+69,18.3,14.7,1344.0,Flinders Ln -Degraves St (Crossing)
+61,18.5,14.8,1344.0,RMIT Building 14
+182,18.7,14.9,1344.0,163 King Street
+63,18.6,14.9,1344.0,231 Bourke St
+50,17.4,14.9,1344.0,Faraday St-Lygon St (West)
+18,18.1,15.0,1344.0,Collins Place (North)
+85,18.4,15.0,1344.0,Macaulay Rd (North)
+209,19.6,15.1,1344.0,Flinders Underpass - Walkway
+49,18.4,15.2,1344.0,QVM-Therry St (South)
+68,18.7,15.2,1344.0,Flinders Ln -Degraves St (North)
+40,17.2,15.2,1344.0,Lonsdale St-Spring St (West)
+48,18.4,15.8,1344.0,QVM-Queen St (East)
+87,19.3,15.9,1344.0,Errol St (West)
+134,20.3,16.1,1344.0,I-Hub Southern Cross Station - Bourke Street Entrance - North
+164,20.6,16.2,1296.0,I-Hub 526 La Trobe Street (Footpath)
+20,20.5,16.3,1344.0,Chinatown-Lt Bourke St (South)
+41,20.3,16.5,1296.0,Flinders La-Swanston St (West)
+107,21.5,16.6,1344.0,Royal Mint 280 William St
+30,20.6,16.6,1152.0,Lonsdale St (South)
+70,20.3,16.6,1344.0,Errol Street (East)
+179,21.6,16.7,1344.0,61-67 Power Street Southbank
+187,19.9,16.8,1344.0,RMIT Building 22 - 330 Swanston Street
+135,22.0,17.0,1344.0,I-Hub Southern Cross Station - Bourke Street Entrance - South
+59,21.4,17.3,1344.0,Building 80 RMIT
+36,21.6,17.5,1344.0,Queen St (West)
+54,23.2,17.9,1344.0,Lincoln-Swanston (West)
+79,23.4,17.9,1344.0,Flinders St (South)
+141,24.0,18.0,1344.0,Awning of Nationwide Parking 474 Flinders Street
+76,22.6,18.1,1344.0,Macaulay Rd- Bellair St
+166,23.1,18.8,1344.0,484 Spencer Street
+8,23.8,19.8,1296.0,Webb Bridge
+27,20.2,20.1,1344.0,QV Market-Peel St
+35,26.9,20.2,1344.0,Southbank Promenade
+39,22.9,20.3,1344.0,Alfred Place
+43,25.3,20.3,1344.0,Monash Rd-Swanston St (West)
+31,25.0,20.4,1344.0,Lygon St (West)
+19,21.4,20.4,1344.0,Chinatown-Swanston St (North)
+131,27.3,20.6,1344.0,I-Hub Corner of King Street and Flinders Street (2-6 King)
+44,26.3,20.7,1344.0,Tin Alley-Swanston St (West)
+86,25.7,20.8,1344.0,Queensberry St - Errol St (South)
+42,25.9,20.9,1344.0,Grattan St-Swanston St (West)
+180,23.9,21.0,1200.0,"Pumping Station No.2, 330 Macaulay Road"
+140,23.7,22.0,1344.0,COM Pole 2837 - Boyd Park
+5,30.8,22.2,1344.0,Princes Bridge
+137,26.3,22.7,1344.0,"COM Pole 2353 - Towards the city, NAB Building"
+14,27.3,22.8,1344.0,Sandridge Bridge
+130,29.4,23.1,1344.0,I-Hub 892 Bourke Street
+46,28.4,23.1,1344.0,Pelham St (South)
+188,31.7,23.7,1344.0,RMIT Building 51 - 80-92 Victoria Street
+51,28.9,24.0,1344.0,QVM-Franklin St (North)
+10,29.1,24.2,1344.0,Victoria Point
+165,30.6,24.3,1344.0,475 Spencer Street
+37,27.8,24.5,720.0,Lygon St (East)
+139,32.8,25.3,1344.0,COM Pole 1647 - Sandridge Bridge Signal Box
+143,37.8,25.5,1344.0,"Mounted on Toilet - Spencer Street, Batman Park"
+142,36.5,27.2,1344.0,Hamer Hall Entrance (COM Pole 1584)
+117,39.9,28.5,1344.0,114 Flinders Street Car Park Footpath
+25,42.8,29.0,1344.0,Melbourne Convention Exhibition Centre
+75,42.4,30.1,1344.0,Spring St- Flinders st (West)
+167,36.9,31.6,1296.0,I-Hub 526 La Trobe Street (Crossing)
+71,41.9,31.8,1344.0,Westwood Place
+11,36.7,32.1,1344.0,Docklands Waterfront City Building Side
+72,38.9,32.3,1344.0,Flinders St- ACMI
+29,42.9,32.5,1344.0,St Kilda Rd-Alexandra Gardens
+77,38.9,32.5,1344.0,Harbour Esplanade (West) - Pedestrian path
+118,45.7,36.1,1344.0,114 Flinders Street Car Park Crossing
+12,44.7,39.2,1344.0,New Quay
+138,62.8,51.6,1200.0,"COM Pole 1671 - Enterprize Park, Queens Bridge"
+123,78.4,51.9,1296.0,Birrarung Marr East - Batman Ave Bridge Entry
+161,107.2,72.9,1344.0,Birrarung Marr - COM - Pole 1109
+136,136.5,86.6,1104.0,"COM Pole 1120 - Towards the City, Near Federation Square Bridge"
+124,246.5,166.3,288.0,Birrarung Marr East - Batman Ave Bridge Entry
