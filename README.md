@@ -1,5 +1,7 @@
 # Melbourne foot traffic: the Metro Tunnel, and forecasting a week ahead
 
+**Live demo:** [vedantkinikar.duckdns.org/projects/melbourne-footfall](https://vedantkinikar.duckdns.org/projects/melbourne-footfall/), a sensor map around the new stations and a forecast explorer.
+
 Two questions, answered with 1.6 million hourly counts from the City of Melbourne's pedestrian sensors (Oct 2024 to Oct 2026, 102 sensors):
 
 1. **Did the Metro Tunnel change foot traffic on the streets around its new CBD stations?**
@@ -111,6 +113,8 @@ python test_forecast.py  # checks the data cleaning, lag alignment and distance 
 ```
 
 `fetch.py` always pulls the latest data. The live dataset is a rolling two-year window, so re-running later will shift the dates and numbers slightly. The committed `results/` are from data up to 19 Oct 2026 (the partial last day is excluded).
+
+**Run the demo locally.** After the steps above, `python demo/export.py` writes `demo/data.json` (it refits the forecast, about 20 s). Then serve the repo with `python -m http.server` and open http://localhost:8000/demo/. The page is static, so `demo/` can be copied to any web server path as is.
 
 ## How it handles messy sensor data
 

@@ -1,0 +1,564 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Melbourne Foot Traffic</title>
+<meta name="description" content="Interactive demo: did the Metro Tunnel change foot traffic around its new CBD stations, and how well can gradient boosting forecast next week's hourly pedestrian counts? Built on City of Melbourne sensor data.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Melbourne foot traffic: the Metro Tunnel, and forecasting a week ahead">
+<meta property="og:description" content="A map of how foot traffic moved around the new Metro Tunnel stations, and a week-ahead gradient-boosting forecast you can explore sensor by sensor.">
+<meta property="og:url" content="https://vedantkinikar.duckdns.org/projects/melbourne-footfall/">
+<link rel="canonical" href="https://vedantkinikar.duckdns.org/projects/melbourne-footfall/">
+<meta name="theme-color" content="#0b1020">
+<script>
+  (function () {
+    // Relative URLs (data.json, ../../) need the page to sit at a path ending in "/".
+    var p = location.pathname;
+    if (location.protocol.indexOf('http') === 0 && !/\/$|\.html?$/.test(p)) location.replace(p + '/' + location.search + location.hash);
+    var t;
+    try { t = localStorage.getItem('theme'); } catch (e) {}
+    if (t !== 'light' && t !== 'dark') t = window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', t);
+  })();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" integrity="sha512-h9FcoyWjHcOcmEVkxOfTLnmZFWIH0iZhZT1H2TbOq55xssQGEJHEaIm+PgoUaZbRvQTNTluNOEfb1ZRy6D3BOw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>
+  :root {
+    --bg: #0b1020; --bg-soft: #111830; --card: #141c34; --line: #233054;
+    --fg: #eef2ff; --fg-dim: #9aa7c7; --accent: #6366f1; --accent-2: #22d3ee;
+    --radius: 16px;
+    --link: #22d3ee; --focus: #22d3ee;
+    --up: #3b82f6; --down: #f97316; --none: #7c86a2;
+    --holiday: rgba(245, 158, 11, .18); --event: rgba(99, 102, 241, .16);
+    color-scheme: dark;
+  }
+  :root[data-theme="light"] {
+    --bg: #fbfbfe; --bg-soft: #f2f4fb; --card: #ffffff; --line: #e2e6f3;
+    --fg: #111830; --fg-dim: #54608a;
+    --link: #4f46e5; --focus: #4f46e5;
+    --up: #2563eb; --down: #ea580c; --none: #98a1bb;
+    --holiday: rgba(245, 158, 11, .22); --event: rgba(99, 102, 241, .14);
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; color: var(--fg); font: 16px/1.6 Manrope, system-ui, -apple-system, "Segoe UI", sans-serif;
+    background:
+      radial-gradient(900px 420px at 0% -10%, rgba(99, 102, 241, .16), transparent 60%),
+      radial-gradient(700px 360px at 100% 0%, rgba(34, 211, 238, .08), transparent 60%),
+      var(--bg);
+    background-repeat: no-repeat;
+  }
+  h1, h2, h3 { font-family: "Space Grotesk", Manrope, sans-serif; line-height: 1.15; letter-spacing: -.01em; margin: 0 0 .5em; }
+  h1 { font-size: clamp(1.9rem, 4.5vw, 3rem); font-weight: 700; }
+  h2 { font-size: clamp(1.35rem, 3vw, 1.8rem); font-weight: 600; }
+  h3 { font-size: 1.05rem; font-weight: 600; }
+  p { margin: 0 0 1em; }
+  a { color: var(--link); text-underline-offset: 2px; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 clamp(16px, 4vw, 28px); }
+  .skip { position: absolute; left: 12px; top: -48px; background: var(--card); color: var(--fg); padding: 8px 12px; border-radius: 10px; z-index: 2000; }
+  .skip:focus { top: 12px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 0; }
+  .back { display: inline-flex; align-items: center; gap: 6px; color: var(--fg-dim); text-decoration: none; font-weight: 600; min-height: 44px; }
+  .back:hover { color: var(--fg); }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px;
+    background: var(--card); color: var(--fg); border: 1px solid var(--line); border-radius: 999px;
+    font: inherit; font-weight: 600; font-size: .9rem; cursor: pointer;
+  }
+  .btn:hover { border-color: var(--accent); }
+  .btn svg { width: 18px; height: 18px; }
+
+  header.hero { padding: 24px 0 8px; }
+  .eyebrow { color: var(--accent-2); font-weight: 700; font-size: .78rem; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 12px; }
+  :root[data-theme="light"] .eyebrow { color: var(--accent); }
+  .lede { font-size: clamp(1.05rem, 2.2vw, 1.25rem); color: var(--fg); max-width: 60ch; }
+  .meta { color: var(--fg-dim); font-size: .9rem; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; margin: 24px 0 8px; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px; }
+  .stat .label { color: var(--fg-dim); font-size: .8rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+  .stat .value { font-family: "Space Grotesk", sans-serif; font-size: 2rem; font-weight: 700; line-height: 1.2; margin: 6px 0 4px; }
+  .stat .value small { font-size: 1rem; color: var(--fg-dim); font-weight: 500; }
+  .stat .sub { color: var(--fg-dim); font-size: .9rem; line-height: 1.45; }
+
+  section { padding: 40px 0 8px; }
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: clamp(14px, 3vw, 22px); }
+  .intro { color: var(--fg-dim); max-width: 72ch; }
+
+  #map { height: min(540px, 72vh); min-height: 360px; border-radius: 12px; background: var(--bg-soft); z-index: 0; }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 14px 0 0; padding: 0; list-style: none; color: var(--fg-dim); font-size: .88rem; }
+  .legend li { display: inline-flex; align-items: center; gap: 8px; }
+  .dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .8); }
+  .diamond { display: inline-block; width: 11px; height: 11px; background: var(--accent); border: 2px solid #fff; transform: rotate(45deg); box-shadow: 0 0 0 1px rgba(0, 0, 0, .35); }
+  .ring { display: inline-block; width: 16px; height: 16px; border-radius: 50%; border: 2px dashed var(--accent); }
+  .swatch { display: inline-block; width: 18px; height: 12px; border-radius: 3px; }
+
+  .controls { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: flex-end; margin-bottom: 16px; }
+  .field { display: flex; flex-direction: column; gap: 6px; flex: 1 1 220px; min-width: 0; }
+  .field label { font-size: .85rem; font-weight: 600; color: var(--fg-dim); }
+  select {
+    width: 100%; min-height: 44px; padding: 0 12px; font: inherit; font-size: .95rem;
+    color: var(--fg); background: var(--bg-soft); border: 1px solid var(--line); border-radius: 10px;
+  }
+  .chart-box { position: relative; height: 380px; }
+  .note { color: var(--fg-dim); font-size: .92rem; margin: 12px 0 0; }
+
+  .stack { display: grid; gap: 16px; margin-top: 16px; }
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { width: 100%; border-collapse: collapse; font-size: .9rem; font-variant-numeric: tabular-nums; }
+  caption { text-align: left; font-family: "Space Grotesk", sans-serif; font-weight: 600; font-size: 1rem; padding-bottom: 8px; }
+  th, td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; white-space: normal; }
+  th { color: var(--fg-dim); font-weight: 600; font-size: .8rem; }
+  tr.hl td { font-weight: 700; }
+  .foot { color: var(--fg-dim); font-size: .82rem; margin: 8px 0 0; }
+
+  .how { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .how ul { margin: 0; padding-left: 1.1em; color: var(--fg-dim); }
+  .how li { margin-bottom: .45em; }
+  .caveat { border-left: 3px solid var(--down); padding: 12px 16px; background: var(--bg-soft); border-radius: 0 12px 12px 0; color: var(--fg); margin: 0; }
+  .files { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; list-style: none; margin: 0; padding: 0; }
+  .files a { display: block; height: 100%; padding: 14px 16px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; text-decoration: none; color: var(--fg); }
+  .files a:hover { border-color: var(--accent); }
+  .files code { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; color: var(--link); font-size: .92rem; }
+  .files span { display: block; color: var(--fg-dim); font-size: .88rem; margin-top: 2px; }
+  footer { color: var(--fg-dim); font-size: .85rem; padding: 40px 0 48px; }
+  .status { color: var(--down); font-weight: 600; }
+
+  /* Leaflet in the page's theme. Tiles are inverted in dark mode; markers are not. */
+  :root:not([data-theme="light"]) .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.92) contrast(.88) saturate(.6); }
+  .leaflet-container { font: inherit; font-size: .85rem; }
+  .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: var(--card); color: var(--fg); box-shadow: 0 6px 24px rgba(0, 0, 0, .35); }
+  .leaflet-popup-content { margin: 12px 16px; line-height: 1.5; }
+  .leaflet-popup-content strong { font-family: "Space Grotesk", sans-serif; font-size: 1rem; }
+  .leaflet-popup-content .pd { color: var(--fg-dim); }
+  .leaflet-container a.leaflet-popup-close-button { color: var(--fg-dim); }
+  .leaflet-bar a { background: var(--card); color: var(--fg); border-bottom-color: var(--line); }
+  .leaflet-bar a:hover, .leaflet-bar a:focus { background: var(--bg-soft); color: var(--fg); }
+  .leaflet-control-attribution { background: color-mix(in srgb, var(--card) 85%, transparent) !important; color: var(--fg-dim); }
+  .leaflet-control-attribution a { color: var(--link); }
+  .entrance-icon span { display: block; width: 14px; height: 14px; margin: 2px; background: var(--accent); border: 2px solid #fff; transform: rotate(45deg); box-shadow: 0 0 0 1px rgba(0, 0, 0, .4); }
+
+  @media (max-width: 600px) {
+    .chart-box { height: 300px; }
+    #map { min-height: 340px; height: 60vh; }
+    .stat .value { font-size: 1.7rem; }
+    th, td { padding: 7px 6px; }
+    .btn .txt { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="wrap">
+  <nav class="topbar" aria-label="Site">
+    <a class="back" href="../../"><span aria-hidden="true">&larr;</span> Back to portfolio</a>
+    <button class="btn" id="theme" type="button">
+      <svg class="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      <svg class="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      <span class="txt"></span>
+    </button>
+  </nav>
+
+  <main id="main">
+    <header class="hero">
+      <div class="eyebrow">Live demo &middot; City of Melbourne pedestrian sensors</div>
+      <h1>Melbourne foot traffic: the Metro Tunnel, and forecasting a week ahead</h1>
+      <p class="lede" id="finding">Loading the results&hellip;</p>
+      <p class="meta" id="meta"></p>
+      <noscript><p class="status">This demo needs JavaScript to draw the map and chart. The full write-up is in the <a href="https://github.com/kinikarvedant/melbourne-footfall/blob/main/README.md">README</a>.</p></noscript>
+      <p class="status" id="status" role="alert" hidden></p>
+      <div class="stats" id="stats" aria-live="polite"></div>
+    </header>
+
+    <section id="tunnel" aria-labelledby="tunnel-h">
+      <h2 id="tunnel-h">Did the Metro Tunnel change the streets around it?</h2>
+      <p class="intro">Each dot is a footpath sensor, coloured by how its weekday 7&ndash;10am count changed from <span data-fill="before"></span> to <span data-fill="after"></span>: <strong style="color:var(--up)">blue</strong> busier, <strong style="color:var(--down)">orange</strong> quieter, bigger dots for bigger changes. Dashed rings mark <span data-fill="near_m"></span> m around each new station entrance. Select a dot for details.</p>
+      <div class="panel">
+        <div class="controls">
+          <div class="field">
+            <label for="sensor-find">Find a sensor (sorted by distance to an entrance)</label>
+            <select id="sensor-find"><option value="">Choose a sensor&hellip;</option></select>
+          </div>
+        </div>
+        <div id="map" role="region" aria-label="Map of pedestrian sensors and Metro Tunnel entrances"></div>
+        <ul class="legend" aria-label="Map legend">
+          <li><span class="dot" style="background:var(--up)"></span> busier on weekday mornings</li>
+          <li><span class="dot" style="background:var(--down)"></span> quieter on weekday mornings</li>
+          <li><span class="dot" style="background:var(--none)"></span> not enough working days to compare</li>
+          <li><span class="diamond"></span> Metro Tunnel entrance</li>
+          <li><span class="ring"></span><span><span data-fill="near_m"></span> m from an entrance</span></li>
+        </ul>
+      </div>
+      <div class="panel" style="margin-top:16px">
+        <div class="table-wrap"><table id="summary-table"></table></div>
+        <p class="foot">Median change per site, <span data-fill="after_year"></span> vs <span data-fill="before_year"></span>. Near: within <span data-fill="near_m"></span> m of an entrance. Far: <span data-fill="far_m"></span> m or more. Permutation p-values over site labels.</p>
+      </div>
+    </section>
+
+    <section id="forecast" aria-labelledby="forecast-h">
+      <h2 id="forecast-h">Forecast explorer</h2>
+      <p class="intro">A gradient-boosting model forecasts each sensor's hourly count up to a week ahead, using only what's known a week in advance. Pick one of the <span data-fill="n_series"></span> busiest sensors and a week of the test window to compare it with the actual count and with the naive "same hour last week" forecast.</p>
+      <div class="panel">
+        <div class="controls">
+          <div class="field">
+            <label for="sensor-select">Sensor</label>
+            <select id="sensor-select"></select>
+          </div>
+          <div class="field">
+            <label for="week-select">Week</label>
+            <select id="week-select"></select>
+          </div>
+        </div>
+        <div class="chart-box"><canvas id="chart" role="img" aria-label="Line chart of hourly pedestrian counts"></canvas></div>
+        <ul class="legend" id="shade-legend" aria-label="Shaded days"></ul>
+        <p class="note" id="sensor-note"></p>
+      </div>
+      <div class="stack">
+        <div class="panel">
+          <div class="table-wrap"><table id="metrics-table"></table></div>
+          <p class="foot">WAPE = total absolute error divided by total actual count. *Uses observed weather as a stand-in for a weather forecast, so it's an upper bound on what weather adds.</p>
+        </div>
+        <div class="panel">
+          <div class="table-wrap"><table id="events-table"></table></div>
+          <p class="foot">The model knows a public holiday is coming, but not which kind. Gap = actual vs forecast.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="how" aria-labelledby="how-h">
+      <h2 id="how-h">How it works</h2>
+      <div class="how">
+        <div class="panel">
+          <h3>Metro Tunnel comparison</h3>
+          <ul>
+            <li>Compares <span data-fill="after"></span> with the same dates a year earlier, so seasonality cancels out.</li>
+            <li>Sites within <span data-fill="near_m"></span> m of a State Library or Town Hall entrance ("near") against sites <span data-fill="far_m"></span> m or more away ("far"). Sensors under <span data-fill="site_m"></span> m apart count as one site.</li>
+            <li>A permutation test over site labels asks whether the near/far gap could be chance.</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h3>Week-ahead forecast</h3>
+          <ul>
+            <li>Gradient boosting (scikit-learn, Poisson loss) trained on <span data-fill="train"></span>, tested on <span data-fill="test"></span>: <span data-fill="test_sensors"></span> sensors, <span data-fill="test_hours"></span> sensor-hours.</li>
+            <li>Features: hour, day of week, month, Victorian public holidays, and the same hour <span data-fill="lags"></span> weeks earlier.</li>
+            <li>Scored against "same hour last week" and "average of the last 4 weeks".</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h3>Messy sensor data</h3>
+          <ul>
+            <li>The feed leaves out empty hours, so a missing hour on a working day counts as zero pedestrians.</li>
+            <li>A day missing any hour between <span data-fill="daytime"></span>, or with a zero total, is a sensor outage and is dropped.</li>
+            <li>Indoor sensors (library and community-hub doors) are left out.</li>
+          </ul>
+        </div>
+      </div>
+      <p class="caveat" style="margin-top:16px"><strong>Caveats:</strong> these are footpath sensors, so they measure street activity, not station ridership. There's no measurable overall Metro Tunnel effect yet, and one-off events like the AFL Grand Final break the forecast.</p>
+    </section>
+
+    <section id="files" aria-labelledby="files-h">
+      <h2 id="files-h">Files</h2>
+      <ul class="files">
+        <li><a href="https://github.com/kinikarvedant/melbourne-footfall/blob/main/README.md"><code>README.md</code><span>The full write-up, with limits and what went wrong first</span></a></li>
+        <li><a href="https://github.com/kinikarvedant/melbourne-footfall/blob/main/metro_tunnel.py"><code>metro_tunnel.py</code><span>Near vs far comparison and permutation test</span></a></li>
+        <li><a href="https://github.com/kinikarvedant/melbourne-footfall/blob/main/forecast.py"><code>forecast.py</code><span>Gradient boosting, baselines and event days</span></a></li>
+        <li><a href="https://github.com/kinikarvedant/melbourne-footfall/blob/main/fetch.py"><code>fetch.py</code><span>Downloads and cleans the sensor and weather data</span></a></li>
+        <li><a href="https://github.com/kinikarvedant/melbourne-footfall/blob/main/results/"><code>results/</code><span>Every table and chart behind this page</span></a></li>
+        <li><a href="https://github.com/kinikarvedant/melbourne-footfall/blob/main/demo/export.py"><code>demo/export.py</code><span>Builds this page's data.json</span></a></li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>
+    <p>Pedestrian counts and sensor locations: City of Melbourne Open Data. Metro Tunnel entrances and map: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>. Public holidays: the <code>holidays</code> Python package.</p>
+    <p>Built by Vedant Kinikar, Master of Data Science, RMIT University. <a href="../../">Back to portfolio</a></p>
+  </footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" integrity="sha512-puJW3E/qXDqYp9IfhAI54BJEaWIfloJ7JWs7OeD5i6ruC9JZL1gERT1wjtwXFlh7CjE7ZJ+/vcRZRkIYIb6p4g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" integrity="sha512-CQBWl4fJHWbryGE+Pc7UAxWMUMNMWzWxF4SQo9CgkJIN1kx6djDQZjh3Y8SZ1d+6I+1zze6Z7kHXO7q3UyZAWw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>
+(function () {
+  'use strict';
+  var $ = function (s) { return document.querySelector(s); };
+  var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  var DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  var root = document.documentElement;
+  var data = null, chart = null;
+
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); }
+  function num(x) { return x == null ? 'n/a' : Number(x).toLocaleString('en-AU'); }
+  function pct(x, signed) {
+    if (x == null) return 'n/a';
+    var sign = signed && x > 0 ? '+' : x < 0 ? '−' : '';
+    return sign + Math.abs(x).toFixed(1) + '%';
+  }
+  // Timestamps in data.json are Melbourne clock time without a zone; do all date maths in UTC so the
+  // visitor's own timezone and daylight saving never shift them.
+  function utc(iso) {
+    var p = iso.split(/[- :T]/).map(Number);
+    return Date.UTC(p[0], p[1] - 1, p[2], p[3] || 0);
+  }
+  function day(ms) { var d = new Date(ms); return d.getUTCDate() + ' ' + MONTHS[d.getUTCMonth()]; }
+  function longDate(iso) { var d = new Date(utc(iso)); return d.getUTCDate() + ' ' + MONTHS[d.getUTCMonth()] + ' ' + d.getUTCFullYear(); }
+  function cssVar(name) { return getComputedStyle(root).getPropertyValue(name).trim(); }
+  function fail(msg) { var s = $('#status'); s.textContent = msg; s.hidden = false; }
+
+  // Theme: OS preference by default, the visitor's choice once they make one.
+  var themeBtn = $('#theme');
+  function showTheme() {
+    var dark = root.getAttribute('data-theme') !== 'light';
+    themeBtn.querySelector('.i-sun').style.display = dark ? '' : 'none';
+    themeBtn.querySelector('.i-moon').style.display = dark ? 'none' : '';
+    themeBtn.querySelector('.txt').textContent = dark ? 'Light' : 'Dark';
+    themeBtn.setAttribute('aria-label', dark ? 'Switch to light theme' : 'Switch to dark theme');
+    document.querySelector('meta[name="theme-color"]').setAttribute('content', cssVar('--bg'));
+  }
+  function setTheme(t, save) {
+    root.setAttribute('data-theme', t);
+    if (save) { try { localStorage.setItem('theme', t); } catch (e) {} }
+    showTheme();
+    if (chart) drawChart();
+  }
+  themeBtn.addEventListener('click', function () { setTheme(root.getAttribute('data-theme') === 'light' ? 'dark' : 'light', true); });
+  if (window.matchMedia) {
+    var mq = matchMedia('(prefers-color-scheme: light)');
+    var onOs = function (e) {
+      var saved = null;
+      try { saved = localStorage.getItem('theme'); } catch (err) {}
+      if (!saved) setTheme(e.matches ? 'light' : 'dark', false);
+    };
+    if (mq.addEventListener) mq.addEventListener('change', onOs);
+  }
+  showTheme();
+
+  fetch('data.json')
+    .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function (d) { data = d; render(); })
+    .catch(function (e) { fail('Could not load the demo data (' + e.message + ').'); });
+
+  function render() {
+    var d = data, F = d.forecast, M = d.metro_tunnel;
+    var metric = {};
+    F.metrics.forEach(function (r) { metric[r.method] = r; });
+    var gb = metric['gradient boosting'], naive = metric['same hour last week'];
+    var daily = M.summary.find(function (r) { return r.measure === 'all day, every day'; });
+    var gfDates = Object.keys(F.grand_finals);
+    var gf = F.event_days.find(function (r) { return gfDates.indexOf(r.date) >= 0 && r.where === 'all sensors'; });
+    var cut = Math.round(100 * (naive.wape_pct - gb.wape_pct) / naive.wape_pct);
+    var hours = F.series[0].actual.length, perWeek = 168 / F.step_hours, weeks = Math.floor(hours / perWeek);
+    var testEnd = new Date(utc(F.test_start) + (hours - 1) * F.step_hours * 36e5).toISOString().slice(0, 10);
+
+    $('#finding').textContent = 'Streets near the new Metro Tunnel stations show no measurable change in foot traffic against the rest of the city so far, and a gradient-boosting model forecasts next week\'s hourly counts with ' + cut + '% less error than repeating last week.';
+    $('#meta').textContent = 'Data through ' + longDate(d.data_through) + ' · page data generated ' + longDate(d.generated_at);
+
+    var cards = [
+      ['Forecast error', pct(gb.wape_pct), 'WAPE for gradient boosting, against ' + pct(naive.wape_pct) + ' for same hour last week'],
+      ['On public holidays', pct(gb.holiday_wape_pct), 'holiday WAPE, against ' + pct(naive.holiday_wape_pct) + ' for same hour last week'],
+      ['Grand Final Saturday', pct(gf.gap_pct, true), 'actual vs forecast across ' + gf.sensors + ' sensors: ' + num(gf.actual) + ' vs ' + num(gf.forecast)],
+      ['Near vs far, all day', pct(daily.near_median_change_pct, true) + ' <small>vs</small> ' + pct(daily.far_median_change_pct, true),
+        'median change, ' + daily.n_near_sites + ' near vs ' + daily.n_far_sites + ' far sites; p = ' + daily.permutation_p]
+    ];
+    $('#stats').innerHTML = cards.map(function (c) {
+      return '<div class="stat"><div class="label">' + esc(c[0]) + '</div><div class="value">' + c[1] + '</div><div class="sub">' + esc(c[2]) + '</div></div>';
+    }).join('');
+
+    var fill = {
+      before: longDate(M.before[0]) + ' – ' + longDate(M.before[1]),
+      after: longDate(M.after[0]) + ' – ' + longDate(M.after[1]),
+      before_year: M.before[0].slice(0, 4), after_year: M.after[0].slice(0, 4),
+      near_m: M.near_m, far_m: M.far_m, site_m: M.site_m,
+      n_series: F.series.length,
+      train: longDate(F.train_start) + ' – ' + longDate(F.train_end),
+      test: longDate(F.test_start) + ' – ' + longDate(testEnd),
+      test_sensors: F.test_sensors, test_hours: num(F.test_hours),
+      lags: F.lag_weeks[0] + '–' + F.lag_weeks[F.lag_weeks.length - 1],
+      daytime: F.daytime_hours[0] + 'am and ' + (F.daytime_hours[1] - 12) + 'pm'
+    };
+    document.querySelectorAll('[data-fill]').forEach(function (el) { el.textContent = fill[el.getAttribute('data-fill')]; });
+
+    table('#summary-table', 'Near vs far: median change per site',
+      ['measure', 'near (' + daily.n_near_sites + ' sites)', 'far (' + daily.n_far_sites + ' sites)', 'difference', 'p'],
+      M.summary.map(function (r) { return [r.measure, pct(r.near_median_change_pct, true), pct(r.far_median_change_pct, true), (r.difference_pts > 0 ? '+' : r.difference_pts < 0 ? '−' : '') + Math.abs(r.difference_pts).toFixed(1) + ' pts', r.permutation_p]; }));
+    table('#metrics-table', 'Forecast error over the test window',
+      ['method', 'WAPE', 'error per hour', 'holiday WAPE'],
+      F.metrics.map(function (r) { return [r.method, pct(r.wape_pct), num(r.mae_per_hour), pct(r.holiday_wape_pct)]; }), 'gradient boosting');
+    table('#events-table', 'Public holiday and Grand Final: actual vs forecast',
+      ['date', 'where', 'actual', 'forecast', 'gap'],
+      F.event_days.map(function (r) { var t = utc(r.date); return [DAYS[new Date(t).getUTCDay()] + ' ' + day(t) + (F.grand_finals[r.date] ? ', ' + F.grand_finals[r.date] : F.holidays.indexOf(r.date) >= 0 ? ', public holiday' : ''), r.where, num(r.actual), num(r.forecast), pct(r.gap_pct, true)]; }));
+
+    if (window.L) drawMap(); else fail('The map library did not load.');
+    setupExplorer(weeks, perWeek);
+  }
+
+  function table(sel, caption, head, rows, highlight) {
+    $(sel).innerHTML = '<caption>' + esc(caption) + '</caption><thead><tr>' + head.map(function (h) { return '<th scope="col">' + esc(h) + '</th>'; }).join('') + '</tr></thead><tbody>' +
+      rows.map(function (r) { return '<tr' + (r[0] === highlight ? ' class="hl"' : '') + '>' + r.map(function (c) { return '<td>' + esc(c) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody>';
+  }
+
+  function drawMap() {
+    var d = data, M = d.metro_tunnel;
+    var map = L.map('map', { scrollWheelZoom: false });
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    var groupText = { near: 'near (within ' + M.near_m + ' m)', far: 'far (' + M.far_m + ' m or more)', buffer: 'in between, left out of the near/far test' };
+    var up = cssVar('--up'), down = cssVar('--down'), none = cssVar('--none');
+    var markers = {};
+    // Biggest changes first, so small dots are drawn on top and stay clickable.
+    d.sensors.slice().sort(function (a, b) { return Math.abs(b.am_change_pct || 0) - Math.abs(a.am_change_pct || 0); }).forEach(function (s) {
+      var v = s.am_change_pct;
+      var body = v == null && s.daily_change_pct == null
+        ? '<br><span class="pd">Not enough working days in both years to compare.</span>'
+        : '<br>All day, every day: <b>' + pct(s.daily_change_pct, true) + '</b><br>Weekday 7–10am: <b>' + pct(v, true) + '</b>';
+      var m = L.circleMarker([s.lat, s.lon], {
+        radius: v == null ? 4 : Math.min(4 + 1.7 * Math.sqrt(Math.abs(v)), 16),
+        color: '#ffffff', weight: 1, fillColor: v == null ? none : v >= 0 ? up : down, fillOpacity: v == null ? 0.6 : 0.85
+      }).bindPopup('<strong>' + esc(s.name) + '</strong><br><span class="pd">' + num(s.dist_m) + ' m from the nearest Metro Tunnel entrance, ' + groupText[s.group] + '</span>' + body +
+        '<br><span class="pd">' + M.after[0].slice(0, 4) + ' vs ' + M.before[0].slice(0, 4) + ', same calendar window</span>').addTo(map);
+      markers[s.id] = m;
+    });
+
+    d.entrances.forEach(function (e) {
+      L.circle([e.lat, e.lon], { radius: M.near_m, color: cssVar('--accent'), weight: 1.5, dashArray: '5 5', fillOpacity: 0.06, interactive: false }).addTo(map);
+      L.marker([e.lat, e.lon], {
+        icon: L.divIcon({ className: 'entrance-icon', html: '<span></span>', iconSize: [22, 22], iconAnchor: [11, 11], popupAnchor: [0, -8] }),
+        title: e.name + ' (Metro Tunnel entrance)', alt: e.name, zIndexOffset: 1000
+      }).bindPopup('<strong>' + esc(e.name) + '</strong><br><span class="pd">Metro Tunnel station entrance</span>').addTo(map);
+    });
+    // Open on the new stations; zoom out for the rest of the network.
+    map.fitBounds(L.latLngBounds(d.entrances.map(function (e) { return [e.lat, e.lon]; })).pad(0.3));
+
+    var find = $('#sensor-find');
+    d.sensors.slice().sort(function (a, b) { return a.dist_m - b.dist_m; }).forEach(function (s) {
+      find.add(new Option(s.name + ' (' + num(s.dist_m) + ' m)', s.id));
+    });
+    find.addEventListener('change', function () {
+      var m = markers[find.value];
+      if (!m) return;
+      map.setView(m.getLatLng(), Math.max(map.getZoom(), 17));
+      m.openPopup();
+    });
+  }
+
+  var sensorSel = $('#sensor-select'), weekSel = $('#week-select'), weekCount = 0, weekHours = 168;
+  function setupExplorer(weeks, perWeek) {
+    var F = data.forecast, t0 = utc(F.test_start), step = F.step_hours * 36e5;
+    weekCount = weeks; weekHours = perWeek;
+    // Default to the sensor and week the README chart uses: the one named in the event-day table, Grand Final week.
+    var named = F.event_days.map(function (r) { return r.where; });
+    var def = 0;
+    F.series.forEach(function (s, i) {
+      sensorSel.add(new Option(s.name, i));
+      if (named.indexOf(s.name) >= 0) def = i;
+    });
+    sensorSel.value = def;
+    for (var w = 0; w < weeks; w++) {
+      var a = t0 + w * perWeek * step;
+      weekSel.add(new Option('Week ' + (w + 1) + ': ' + day(a) + ' – ' + day(a + (perWeek - 1) * step), w));
+    }
+    var firstHoliday = F.holidays.length ? Math.floor((utc(F.holidays[0]) - t0) / step / perWeek) : 0;
+    weekSel.value = Math.min(Math.max(firstHoliday, 0), weeks - 1);
+    sensorSel.addEventListener('change', drawChart);
+    weekSel.addEventListener('change', drawChart);
+    if (window.Chart) drawChart(); else fail('The chart library did not load.');
+  }
+
+  function drawChart() {
+    if (!window.Chart) return;
+    var F = data.forecast, s = F.series[+sensorSel.value], w = +weekSel.value;
+    var step = F.step_hours * 36e5, start = w * weekHours, end = start + weekHours;
+    var t0 = utc(F.test_start) + start * step;
+    var times = [];
+    for (var i = 0; i < weekHours; i++) times.push(new Date(t0 + i * step));
+
+    // Shade public holidays and named event days that fall in this week.
+    var spans = [], seen = {};
+    times.forEach(function (t, i) {
+      var key = t.toISOString().slice(0, 10);
+      if (seen[key]) return;
+      seen[key] = true;
+      if (F.holidays.indexOf(key) >= 0) spans.push({ from: i, to: i + 24 / F.step_hours, color: cssVar('--holiday'), label: 'public holiday' });
+      else if (F.grand_finals[key]) spans.push({ from: i, to: i + 24 / F.step_hours, color: cssVar('--event'), label: F.grand_finals[key] });
+    });
+    $('#shade-legend').innerHTML = spans.map(function (sp) {
+      return '<li><span class="swatch" style="background:' + sp.color + '"></span>' + esc(day(times[sp.from].getTime()) + ': ' + sp.label) + '</li>';
+    }).join('');
+
+    var fg = cssVar('--fg'), dim = cssVar('--fg-dim'), line = cssVar('--line'), accent = cssVar('--accent'), orange = cssVar('--down');
+    var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var shade = {
+      id: 'shade',
+      beforeDatasetsDraw: function (c, args, opts) {
+        var x = c.scales.x, area = c.chartArea, ctx = c.ctx;
+        (opts.spans || []).forEach(function (sp) {
+          var x0 = Math.max(x.getPixelForValue(sp.from), area.left), x1 = Math.min(x.getPixelForValue(sp.to), area.right);
+          ctx.save(); ctx.fillStyle = sp.color; ctx.fillRect(x0, area.top, x1 - x0, area.bottom - area.top); ctx.restore();
+        });
+      }
+    };
+    var series = function (label, values, color, width, dash) {
+      return { label: label, data: values.slice(start, end), borderColor: color, backgroundColor: color, borderWidth: width, borderDash: dash || [], pointRadius: 0, pointHoverRadius: 3, spanGaps: false };
+    };
+
+    if (chart) chart.destroy();
+    Chart.defaults.font.family = 'Manrope, system-ui, sans-serif';
+    Chart.defaults.color = dim;
+    chart = new Chart($('#chart'), {
+      type: 'line',
+      data: {
+        labels: times.map(function (t, i) { return i; }),
+        datasets: [
+          series('Actual', s.actual, fg, 2),
+          series('Gradient boosting', s.model, accent, 1.8),
+          series('Same hour last week', s.naive, orange, 1.4, [5, 4])
+        ]
+      },
+      options: {
+        maintainAspectRatio: false,
+        animation: reduce ? false : { duration: 300 },
+        interaction: { mode: 'index', intersect: false },
+        scales: {
+          x: {
+            grid: { color: line },
+            ticks: {
+              autoSkip: false, maxRotation: 0,
+              callback: function (v, i) { var t = times[i]; return t.getUTCHours() === 0 ? [DAYS[t.getUTCDay()], day(t.getTime())] : null; }
+            }
+          },
+          y: { beginAtZero: true, grid: { color: line }, title: { display: true, text: 'pedestrians per hour' }, ticks: { callback: function (v) { return num(v); } } }
+        },
+        plugins: {
+          shade: { spans: spans },
+          legend: { position: 'top', align: 'start', labels: { color: fg, boxWidth: 18, boxHeight: 3 } },
+          tooltip: {
+            callbacks: {
+              title: function (items) { var t = times[items[0].dataIndex]; return DAYS[t.getUTCDay()] + ' ' + day(t.getTime()) + ', ' + String(t.getUTCHours()).padStart(2, '0') + ':00'; },
+              label: function (it) { return ' ' + it.dataset.label + ': ' + (it.raw == null ? 'no data' : num(it.raw)); }
+            }
+          }
+        }
+      },
+      plugins: [shade]
+    });
+
+    var weekLabel = weekSel.options[weekSel.selectedIndex].text;
+    $('#chart').setAttribute('aria-label', 'Hourly pedestrians at ' + s.name + ', ' + weekLabel + ': actual, gradient-boosting forecast and same hour last week.');
+    $('#sensor-note').textContent = 'At ' + s.name + ', across all ' + weekCount + ' test weeks: gradient boosting WAPE ' + pct(s.wape_model) + ', same hour last week ' + pct(s.wape_naive_1w) + '. Gaps are hours left out of the test because the sensor was down that day or a week earlier.';
+  }
+})();
+</script>
+</body>
+</html>

@@ -79,16 +79,14 @@ def fit(train, features):
     return model.fit(train[features], train["count"])
 
 
-def main():
-    RESULTS.mkdir(exist_ok=True)
+def run():
+    """Train on everything before the last TEST_WEEKS weeks, then predict those weeks with the model and both baselines."""
     counts = pd.read_csv(DATA / "counts.csv", encoding="utf-8-sig")
     weather = pd.read_csv(DATA / "weather.csv", parse_dates=["time"])
     outdoor = pd.read_csv(DATA / "sensors.csv", encoding="utf-8-sig").query("location_type == 'Outdoor'")
     sensor_names = outdoor.set_index("location_id").sensor_description
 
     grid = hourly_grid(counts[counts.location_id.isin(outdoor.location_id)])
-    hol = holiday_effects(grid)
-    hol.to_csv(RESULTS / "holiday_effects.csv", index=False)
     df = add_features(hourly_panel(grid), weather)
     df = df.dropna(subset=["count", "lag_168"])
     df["sensor"] = df.sensor.astype("category")
@@ -99,6 +97,14 @@ def main():
     test["pred_naive_1w"] = test.lag_168
     test["pred_mean_4w"] = test.mean_4w.fillna(test.lag_168)
     test["pred_model"] = fit(train, BASE).predict(test[BASE])
+    return grid, sensor_names, train, test, test_start
+
+
+def main():
+    RESULTS.mkdir(exist_ok=True)
+    grid, sensor_names, train, test, test_start = run()
+    hol = holiday_effects(grid)
+    hol.to_csv(RESULTS / "holiday_effects.csv", index=False)
     test["pred_model_weather"] = fit(train, BASE + WEATHER).predict(test[BASE + WEATHER])
 
     preds = {
